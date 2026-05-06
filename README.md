@@ -1,6 +1,6 @@
 # Realmint MCP
 
-Agent-native access to the Realmint catalog of tokenized real-world assets (RWAs): scoring, market data, route support, price history, and on-chain attestations — exposed as native tools over the [Model Context Protocol](https://modelcontextprotocol.io).
+Agent-native access to the Realmint catalog of tokenized real-world assets (RWAs): scoring, market data, route support, and price history — exposed as native tools over the [Model Context Protocol](https://modelcontextprotocol.io).
 
 The MCP surface is **read-only by design**. Trade execution lives in the Realmint HTTP API and requires client-side wallet signing — keys never touch the MCP server.
 
@@ -20,7 +20,6 @@ The MCP surface is **read-only by design**. Trade execution lives in the Realmin
 |---|---|
 | **Score risk & rights** | "Score Tether Gold and tell me if it's safe for our DAO treasury" |
 | **Search the catalog** | "Find tokenized treasuries on Ethereum with no freeze capability" |
-| **Verify on-chain attestation** | "Confirm Realmint's data on KAU matches the on-chain hashes" |
 | **Track issuer changes** | "Has anything in my watchlist changed control parameters this month?" |
 | **Map routable venues** | "Where can I acquire 100k of OUSG, ranked by liquidity?" |
 | **Pull market & price data** | "Show me PAXG's spot price, 24h volume, and 6-month chart" |
@@ -72,11 +71,11 @@ curl -X POST https://mcp.realmint.io/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-You should see 8 tools, each with `annotations.title` and `annotations.readOnlyHint=true`.
+You should see 7 tools, each with `annotations.title` and `annotations.readOnlyHint=true`.
 
 ---
 
-## The 8 tools
+## The 7 tools
 
 | Tool | Purpose |
 |---|---|
@@ -87,7 +86,6 @@ You should see 8 tools, each with `annotations.title` and `annotations.readOnlyH
 | `realmint_get_score` | Six-dimension Risk & Rights Score + composite |
 | `realmint_get_route_support` | Routable venues + per-venue scores |
 | `realmint_get_price_history` | Time-series prices (5m/1h/1d auto-cascading) |
-| `realmint_get_attestation` | On-chain attestation hashes (Injective) |
 
 All tools are read-only. Annotations follow the MCP spec:
 
@@ -154,8 +152,6 @@ The server cascades to coarser buckets (5m → 1h → 1d) when the requested buc
 ## Versioning & changelog
 
 This connector is versioned alongside the Realmint platform. Substantive changes to tool surfaces or output shapes will be announced in this README and reflected in the [discovery card](https://app.realmint.io/.well-known/mcp/server-card.json) (`serverInfo.version`).
-
-Material schema changes that affect agents are also reflected in the per-asset attestation hash returned by `realmint_get_attestation`.
 
 ---
 
