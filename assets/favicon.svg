@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Realmint">
+  <defs>
+    <!-- Leaf gradients — #3ADFC3 → #2BBDCA matches the "mint" wordmark exactly -->
+    <linearGradient id="leafGrad" x1="34%" y1="4%" x2="66%" y2="96%">
+      <stop offset="0%"   stop-color="#3ADFC3"/>
+      <stop offset="100%" stop-color="#2BBDCA"/>
+    </linearGradient>
+    <radialGradient id="leafHighlight" cx="34%" cy="24%" r="66%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <path id="leafPath" d="M476.188 24.146c-6.748-3.504-60.728 38.022-185.304 67.086C230.347 105.355 62.5 153.527 65.286 392.815L0 431.218l20.338 35.598c63.073-40.692 236.014-120.042 409.766-323.621c0 0-26.875 134.419-334.096 311.056c103.685 53.758 249.604 53.758 360.979-76.806C568.346 246.888 476.188 24.146 476.188 24.146Z"/>
+    <clipPath id="leafClip"><use href="#leafPath"/></clipPath>
+  </defs>
+  <g transform="translate(120,100) scale(1.0000) translate(24,24)">
+    <!-- Hairline contrast border so the favicon reads on light tabs -->
+    <use href="#leafPath" fill="none" stroke="#0B1220" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Mint→cyan fill -->
+    <use href="#leafPath" fill="url(#leafGrad)"/>
+    <!-- Top-left radial highlight -->
+    <g clip-path="url(#leafClip)">
+      <use href="#leafPath" fill="url(#leafHighlight)"/>
+    </g>
+  </g>
+</svg>

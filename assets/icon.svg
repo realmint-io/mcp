@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-label="Realmint">
+  <defs>
+    <linearGradient id="bgGradient" x1="96" y1="64" x2="928" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0B0D13"/>
+      <stop offset="100%" stop-color="#14161F"/>
+    </linearGradient>
+    <radialGradient id="bgLift" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(798 154) rotate(121.67) scale(706)">
+      <stop offset="0%"   stop-color="#122B2B" stop-opacity="0.58"/>
+      <stop offset="38%"  stop-color="#122B2B" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#122B2B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mintGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(900 100) rotate(90) scale(380)">
+      <stop offset="0%"   stop-color="#3ADFC3" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#3ADFC3" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(124 924) rotate(90) scale(380)">
+      <stop offset="0%"   stop-color="#2BBDCA" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#2BBDCA" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Leaf gradients — #3ADFC3 → #2BBDCA matches the "mint" wordmark exactly -->
+    <linearGradient id="leafGrad" x1="34%" y1="4%" x2="66%" y2="96%">
+      <stop offset="0%"   stop-color="#3ADFC3"/>
+      <stop offset="100%" stop-color="#2BBDCA"/>
+    </linearGradient>
+    <radialGradient id="leafHighlight" cx="34%" cy="24%" r="66%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <path id="leafPath" d="M476.188 24.146c-6.748-3.504-60.728 38.022-185.304 67.086C230.347 105.355 62.5 153.527 65.286 392.815L0 431.218l20.338 35.598c63.073-40.692 236.014-120.042 409.766-323.621c0 0-26.875 134.419-334.096 311.056c103.685 53.758 249.604 53.758 360.979-76.806C568.346 246.888 476.188 24.146 476.188 24.146Z"/>
+    <clipPath id="leafClip"><use href="#leafPath"/></clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bgGradient)"/>
+  <rect width="1024" height="1024" fill="url(#bgLift)"/>
+  <circle cx="900" cy="100" r="380" fill="url(#mintGlow)"/>
+  <circle cx="124" cy="924" r="380" fill="url(#cyanGlow)"/>
+  <path d="M144 314C268 232 390 200 526 200C668 200 780 246 894 350"
+        stroke="#3ADFC3" stroke-opacity="0.08" stroke-width="2"/>
+  <path d="M128 772C248 662 388 604 530 604C668 604 792 654 904 752"
+        stroke="#2BBDCA" stroke-opacity="0.08" stroke-width="2"/>
+
+  <g transform="translate(252,252) scale(0.9286) translate(24,24)">
+    <!-- Soft drop shadow -->
+    <use href="#leafPath" fill="#0B1220" fill-opacity="0.16" transform="translate(0 12)"/>
+    <!-- Hairline contrast border (replaces the v1 8 px black stroke) -->
+    <use href="#leafPath" fill="none" stroke="#0B1220" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Mint→cyan fill -->
+    <use href="#leafPath" fill="url(#leafGrad)"/>
+    <!-- Top-left radial highlight -->
+    <g clip-path="url(#leafClip)">
+      <use href="#leafPath" fill="url(#leafHighlight)"/>
+    </g>
+    <!-- Inner edge highlight -->
+    <use href="#leafPath" fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="1.5"/>
+  </g>
+</svg>
