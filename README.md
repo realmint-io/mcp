@@ -1,14 +1,15 @@
 # Realmint MCP
 
-Agent-native access to the Realmint catalog of tokenized real-world assets (RWAs): scoring, market data, route support, and price history — exposed as native tools over the [Model Context Protocol](https://modelcontextprotocol.io).
+Agent-native access to the Realmint catalog of tokenized real-world assets (RWAs): scoring, market data, route support, price history, and a keyless **x402 buy on-ramp** — exposed as native tools over the [Model Context Protocol](https://modelcontextprotocol.io).
 
-The MCP surface is **read-only by design**. Trade execution lives in the Realmint HTTP API and requires client-side wallet signing — keys never touch the MCP server.
+The MCP surface is **non-custodial by design**. Every public tool is read-only and moves no funds on its own: agents buy through the x402 funding challenge, which the agent signs **client-side** (EIP-3009) before resubmitting — keys never touch the MCP server.
 
 | | |
 |---|---|
 | **Endpoint** | `https://mcp.realmint.io/mcp` |
 | **Transport** | Streamable HTTP |
 | **Auth** | None for the public catalog |
+| **Tools** | 8 read-only (7 data + the x402 buy on-ramp) |
 | **Discovery card** | [`/.well-known/mcp/server-card.json`](https://app.realmint.io/.well-known/mcp/server-card.json) |
 | **Status** | Live since May 2026 |
 
@@ -23,6 +24,7 @@ The MCP surface is **read-only by design**. Trade execution lives in the Realmin
 | **Track issuer changes** | "Has anything in my watchlist changed control parameters this month?" |
 | **Map routable venues** | "Where can I acquire 100k of OUSG, ranked by liquidity?" |
 | **Pull market & price data** | "Show me PAXG's spot price, 24h volume, and 6-month chart" |
+| **Fund & buy, agent-native** | "Fund my wallet with 25 USDC over x402 and buy 5 of TSLAx" |
 
 ---
 
@@ -71,11 +73,11 @@ curl -X POST https://mcp.realmint.io/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-You should see 7 tools, each with `annotations.title` and `annotations.readOnlyHint=true`.
+You should see 8 tools, each with `annotations.title` and `annotations.readOnlyHint=true`.
 
 ---
 
-## The 7 tools
+## The 8 tools
 
 | Tool | Purpose |
 |---|---|
@@ -86,8 +88,9 @@ You should see 7 tools, each with `annotations.title` and `annotations.readOnlyH
 | `realmint_get_score` | Six-dimension Risk & Rights Score + composite |
 | `realmint_get_route_support` | Routable venues + per-venue scores |
 | `realmint_get_price_history` | Time-series prices (5m/1h/1d auto-cascading) |
+| `realmint_x402_buy_challenge` | x402 funding challenge — the agent-native USDC on-ramp to buy an asset |
 
-All tools are read-only. Annotations follow the MCP spec:
+All tools are read-only — `realmint_x402_buy_challenge` returns the payment challenge only and moves no funds. Annotations follow the MCP spec:
 
 ```
 readOnlyHint:    true
@@ -97,6 +100,20 @@ openWorldHint:   true
 ```
 
 The complete tool catalog with descriptions, inputs, and titles is published in the [discovery card](https://app.realmint.io/.well-known/mcp/server-card.json).
+
+### Buying with `realmint_x402_buy_challenge`
+
+The on-ramp is agent-native and keyless — an agent buys with only an EVM key, the same two signatures a human gives, all **client-side**:
+
+1. Call `realmint_x402_buy_challenge` with your `owner_eoa`, the `amount_usdc`, and the `asset_id` you intend to buy. It returns an HTTP 402 with x402 payment requirements (`accepts[0]`): `payTo` is **your** Base smart account derived from `owner_eoa`, `maxAmountRequired` the USDC atomic amount, `asset` the Base USDC contract, `extra` the EIP-712 domain.
+2. **Verify `payTo` derives from your own `owner_eoa`**, then sign an EIP-3009 `transferWithAuthorization` over that domain, base64-encode the x402 `PaymentPayload`, and re-POST it to `/v1/route/x402-buy` in the `X-PAYMENT` header. On settlement the USDC bridges custody-free to your Injective smart account.
+3. Buy any RWA from that balance via `POST /v1/route/intent` (signing the route as usual). The asset rests in your own smart account — `send` it elsewhere whenever you want, exactly like a human user.
+
+See the [x402 agent-buy guide](https://realmint.io/developers/x402) for the full walkthrough.
+
+### Login & trade tools (self-hosted)
+
+The public endpoint is non-custodial and exposes only the 8 read-only tools above. A **self-hosted** deployment that sets `REALMINT_PRIVY_APP_ID` additionally registers login + trade tools — `realmint_login`, `realmint_wallet`, `realmint_deposit`, `realmint_buy`, `realmint_sell`, `realmint_withdraw` — which run the full buy/sell/withdraw flow server-side, signing in the user's Privy embedded wallets (the login is an interactive device-flow the human approves in a browser). No private key is ever shared with the MCP. These never appear on `mcp.realmint.io`.
 
 ### The Risk & Rights Score
 
@@ -140,7 +157,7 @@ The server cascades to coarser buckets (5m → 1h → 1d) when the requested buc
 
 ## Security & privacy
 
-- **Read-only.** No write tools, no trade execution, no destructive operations.
+- **Non-custodial.** Every public tool is read-only; none moves funds on its own. Buying runs over x402, where the agent signs the EIP-3009 authorization client-side — keys never touch the MCP server.
 - **No PII collected by the MCP server.** The optional `x-api-key` header is used solely for upstream rate-limit identification.
 - **HTTPS** termination via Traefik.
 - **Origin / Host validation** enabled at the FastMCP layer (DNS rebinding protection).
