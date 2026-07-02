@@ -196,4 +196,4 @@ This connector is versioned alongside the Realmint platform. Substantive changes
 
 ---
 
-Realmint is operated by 0xFútbol Inc, a BVI Business Company (registration 2169115), trading as Realmint. The MCP server source lives in a private repository; the hosted endpoint at `https://mcp.realmint.io/mcp` is the supported public interface.
+The MCP server source lives in a private repository; the hosted endpoint at `https://mcp.realmint.io/mcp` is the supported public interface.
