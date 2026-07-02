@@ -2,14 +2,22 @@
 
 Agent-native access to the Realmint catalog of tokenized real-world assets (RWAs): scoring, market data, route support, price history, and a keyless **x402 buy on-ramp** — exposed as native tools over the [Model Context Protocol](https://modelcontextprotocol.io).
 
-The MCP surface is **non-custodial by design**. Every public tool is read-only and moves no funds on its own: agents buy through the x402 funding challenge, which the agent signs **client-side** (EIP-3009) before resubmitting — keys never touch the MCP server.
+The MCP surface is **key-safe by design**. The catalog is read-only. Two trading
+paths move funds only under your own authorization and never see a raw key:
+
+- **x402 keyless buy** — an autonomous agent with its own EVM key signs an EIP-3009
+  authorization **client-side** to fund + buy (`realmint_x402_buy_challenge`).
+- **Sign-in + delegated trade** — a human/connector signs in via OAuth and delegates
+  their Privy embedded wallet once; Realmint then signs buy/sell/withdraw
+  **server-side** under a per-trade spending cap. Privy holds the wallet; no key
+  touches Realmint.
 
 | | |
 |---|---|
 | **Endpoint** | `https://mcp.realmint.io/mcp` |
 | **Transport** | Streamable HTTP |
-| **Auth** | None for the public catalog |
-| **Tools** | 8 read-only (7 data + the x402 buy on-ramp) |
+| **Auth** | Mixed (lazy): catalog is open; trade tools trigger OAuth on first use |
+| **Tools** | 8 catalog (read-only) + 6 trade (OAuth-gated) |
 | **Discovery card** | [`/.well-known/mcp/server-card.json`](https://app.realmint.io/.well-known/mcp/server-card.json) |
 | **Status** | Live since May 2026 |
 
@@ -34,7 +42,9 @@ The MCP surface is **non-custodial by design**. Every public tool is read-only a
 
 1. **Settings → Connectors → Add custom connector**
 2. **Server URL:** `https://mcp.realmint.io/mcp`
-3. **Auth:** none required
+3. **Auth:** none to connect — the catalog works immediately. The first time you
+   call a trade tool, Claude runs the OAuth sign-in (Realmint → Privy) and you
+   delegate your wallet once.
 4. Save and start asking the example prompts above.
 
 ### Claude Desktop
@@ -62,7 +72,7 @@ Configure a remote MCP server with:
 
 - URL: `https://mcp.realmint.io/mcp`
 - Transport: `streamable-http`
-- Auth: none
+- Auth: none to connect; trade tools trigger OAuth on first use
 
 ### Programmatic
 
@@ -73,11 +83,12 @@ curl -X POST https://mcp.realmint.io/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-You should see 8 tools, each with `annotations.title` and `annotations.readOnlyHint=true`.
+Unauthenticated you see the 8 catalog tools (all `readOnlyHint=true`). After OAuth
+sign-in, the 6 trade tools appear too (`destructiveHint=true`).
 
 ---
 
-## The 8 tools
+## Catalog tools (read-only, no auth)
 
 | Tool | Purpose |
 |---|---|
@@ -88,16 +99,24 @@ You should see 8 tools, each with `annotations.title` and `annotations.readOnlyH
 | `realmint_get_score` | Six-dimension Risk & Rights Score + composite |
 | `realmint_get_route_support` | Routable venues + per-venue scores |
 | `realmint_get_price_history` | Time-series prices (5m/1h/1d auto-cascading) |
-| `realmint_x402_buy_challenge` | x402 funding challenge — the agent-native USDC on-ramp to buy an asset |
+| `realmint_x402_buy_challenge` | x402 funding challenge — the keyless, agent-native USDC on-ramp to buy an asset (returns the 402; the agent signs client-side) |
 
-All tools are read-only — `realmint_x402_buy_challenge` returns the payment challenge only and moves no funds. Annotations follow the MCP spec:
+## Trade tools (sign in via OAuth)
 
-```
-readOnlyHint:    true
-destructiveHint: false
-idempotentHint:  true
-openWorldHint:   true
-```
+Calling one of these when signed out returns a `401` that triggers the OAuth flow
+(Realmint's Ory Hydra, federated to Privy login). You sign in and **delegate your
+wallet once** (`app.realmint.io/mcp/delegate`); Realmint then signs each trade
+**server-side** via that delegation, under a per-trade spending cap — no key
+touches the MCP, no per-trade browser step.
+
+| Tool | Purpose |
+|---|---|
+| `realmint_whoami` | Confirm the signed-in identity (Privy DID) |
+| `realmint_my_wallet` | Your wallets, smart account, and balances |
+| `realmint_deposit` | Where to send USDC to add buying power |
+| `realmint_buy` | Buy an RWA (your smart account must already hold USDC) |
+| `realmint_sell` | Sell an RWA back to USDC on Injective |
+| `realmint_withdraw` | Withdraw USDC from your smart account to any address |
 
 The complete tool catalog with descriptions, inputs, and titles is published in the [discovery card](https://app.realmint.io/.well-known/mcp/server-card.json).
 
@@ -110,10 +129,6 @@ The on-ramp is agent-native and keyless — an agent buys with only an EVM key, 
 3. Buy any RWA from that balance via `POST /v1/route/intent` (signing the route as usual). The asset rests in your own smart account — `send` it elsewhere whenever you want, exactly like a human user.
 
 See the [x402 agent-buy guide](https://realmint.io/developers/x402) for the full walkthrough.
-
-### Login & trade tools (self-hosted)
-
-The public endpoint is non-custodial and exposes only the 8 read-only tools above. A **self-hosted** deployment that sets `REALMINT_PRIVY_APP_ID` additionally registers login + trade tools — `realmint_login`, `realmint_wallet`, `realmint_deposit`, `realmint_buy`, `realmint_sell`, `realmint_withdraw` — which run the full buy/sell/withdraw flow server-side, signing in the user's Privy embedded wallets (the login is an interactive device-flow the human approves in a browser). No private key is ever shared with the MCP. These never appear on `mcp.realmint.io`.
 
 ### The Risk & Rights Score
 
@@ -157,8 +172,8 @@ The server cascades to coarser buckets (5m → 1h → 1d) when the requested buc
 
 ## Security & privacy
 
-- **Non-custodial.** Every public tool is read-only; none moves funds on its own. Buying runs over x402, where the agent signs the EIP-3009 authorization client-side — keys never touch the MCP server.
-- **No PII collected by the MCP server.** The optional `x-api-key` header is used solely for upstream rate-limit identification.
+- **Key-safe.** The catalog is read-only. Trading moves funds only under your own authorization and never exposes a raw key: x402 buys are signed client-side (EIP-3009), and the OAuth trade tools sign server-side via your Privy **delegation** under a per-trade spending cap — Privy holds the embedded wallet; no key touches Realmint.
+- **No PII collected by the MCP server.** The `x-api-key` header is used for upstream rate-limit identification; trade-tool identity comes from the OAuth (Hydra) token.
 - **HTTPS** termination via Traefik.
 - **Origin / Host validation** enabled at the FastMCP layer (DNS rebinding protection).
 - **Privacy policy:** <https://realmint.io/privacy>
